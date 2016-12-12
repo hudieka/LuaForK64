@@ -50,4 +50,7 @@ void BOARD_InitPins(void)
     PORT_SetPinMux(PORTB, 16u, kPORT_MuxAlt3);
     /* Affects PORTB_PCR17 register */
     PORT_SetPinMux(PORTB, 17u, kPORT_MuxAlt3);
+    
+    /* Led pin mux Configuration */
+    PORT_SetPinMux(PORTB, 22U, kPORT_MuxAsGpio);
 }

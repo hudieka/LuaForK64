@@ -33,6 +33,7 @@
 #include "board.h"
 #include "pin_mux.h"
 #include "clock_config.h"
+#include "fsl_gpio.h"
 
 #include "lua.h"
 #include "lualib.h"
@@ -46,40 +47,29 @@
  * Definitions
  ******************************************************************************/
 
+#define BOARD_LED_GPIO BOARD_LED_RED_GPIO
+#define BOARD_LED_GPIO_PIN BOARD_LED_RED_GPIO_PIN
+
 lua_State *L;
 
 const char* testfunc = "print(add2(1.0,2.0)) print(sub2(20.1,19))";
-//const char* testfunc = "led_on()";
 
-#if 0
+#if 1
 const char LUA_SCRIPT_GLOBAL[] = {  \
-  "off = 10\n"
-  "on = 10\n"
+  "off = 100\n"
+  "on = 100\n"
+  "while 1 do\n"  
   "led_off()\n"
   "delay(off)\n"
   "led_on()\n"
   "delay(on)\n"
+  "end\n"  
 };
-
-#else
-
-const char LUA_SCRIPT_GLOBAL[] ="  \
-off = 10     \
-on = 10       \
-while 1 do \
- led_off() \
- delay(off)    \
- led_on()        \
- delay(on)      \
- off= off * 1.02      \
- on= on * 1.02      \
-  ifoff > 800 then off = 500 end \
-  ifon > 800 then on = 400 end \
-end";
 #endif
 
-#if 1
-const char lua_test[] = {   
+
+#if 0
+const char LUA_SCRIPT_GLOBAL[] = {   
     "print(\"Hello,I am lua!\\n--this is newline printf\")\n"  
     "function foo()\n"  
     "  local i = 0\n"  
@@ -125,7 +115,7 @@ static void Delay(int num)
   
   for(i = 0; i < num; i++)
   {
-      for(j = 0; j < 3000; j++)
+      for(j = 0; j < 30000; j++)
       {
           ;
       }
@@ -134,13 +124,13 @@ static void Delay(int num)
 
 static int lua_led_on(lua_State* L)
 {
-    PRINTF("LED ON\n");
+    GPIO_SetPinsOutput(BOARD_LED_GPIO, 1u << BOARD_LED_GPIO_PIN);
     return 1;
 }
 
 static int lua_led_off(lua_State* L)
 {
-    PRINTF("LED OFF\n");
+    GPIO_ClearPinsOutput(BOARD_LED_GPIO, 1u << BOARD_LED_GPIO_PIN);
     return 1;
 }
 
@@ -169,12 +159,11 @@ static int add2(lua_State* L)
 {
     //检查栈中的参数是否合法，1表示Lua调用时的第一个参数(从左到右)，依此类推。
     //如果Lua代码在调用时传递的参数不为number，该函数将报错并终止程序的执行。
-    //double op1 = luaL_checknumber(L,1);
-    //double op2 = luaL_checknumber(L,2);
+    double op1 = luaL_checknumber(L,1);
+    double op2 = luaL_checknumber(L,2);
     //将函数的结果压入栈中。如果有多个返回值，可以在这里多次压入栈中。
-    //lua_pushnumber(L,op1 + op2);
+    lua_pushnumber(L,op1 + op2);
     
-    PRINTF("LED ON\n");
     
     //返回值用于提示该C函数的返回值数量，即压入栈中的返回值数量。
     return 1;
@@ -194,12 +183,20 @@ static int sub2(lua_State* L)
  */
 int main(void)
 {   
+    /* Define the init structure for the output LED pin*/
+    gpio_pin_config_t led_config = {
+        kGPIO_DigitalOutput, 0,
+    };
+    
     lua_State *L;
     int ret = 0;
     /* Init board hardware. */
     BOARD_InitPins();
     BOARD_BootClockRUN();
     BOARD_InitDebugConsole();
+    
+        /* Init output LED GPIO. */
+    GPIO_PinInit(BOARD_LED_GPIO, BOARD_LED_GPIO_PIN, &led_config);
     
     PRINTF("---------START-----------\n\r");
     L   = luaL_newstate(); 
@@ -212,9 +209,8 @@ int main(void)
     lua_register(L, "add2", add2);
     lua_register(L, "sub2", sub2);
     //luaopen_mylib(L);
-    //ret = luaL_dostring(L, testfunc); /* 运行Lua脚本 */  
-    //ret = luaL_dostring(L, LUA_SCRIPT_GLOBAL); /* 运行Lua脚本 */  
-		ret = luaL_dostring(L, lua_test); /* 运行Lua脚本 */  
+    ret = luaL_dostring(L, LUA_SCRIPT_GLOBAL); /* 运行Lua脚本 */  
+
     if(ret != 0)
     {
         lua_close(L);  

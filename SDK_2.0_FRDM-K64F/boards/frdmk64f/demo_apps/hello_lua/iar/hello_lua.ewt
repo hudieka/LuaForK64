@@ -2340,7 +2340,7 @@
   <group>
     <name>source</name>
     <file>
-      <name>$PROJ_DIR$\..\hello_world.c</name>
+      <name>$PROJ_DIR$\..\hello_lua.c</name>
     </file>
   </group>
   <group>
